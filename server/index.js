@@ -17,26 +17,29 @@ io.on("connection", (socket) => {
 
   //When a socket receives a player object
   socket.on("player", (player) => {
-    let exists = false;
     //Check if the room exists that the player is trying to join
-    games.forEach((game) => {
-      if (game.code === player.game) {
-        game.players.forEach((playerToCheck) => {
-          //Check for duplicate names in the game
-          if (playerToCheck.name === player.name) {
-            exists = true;
-          }
-        });
-        //If not duplicate
-        if (!exists) {
-          game.players.push(player);
-          console.log(
-            `${player.name} is succesfully pushed to game ${game.code}`
-          );
-          console.log(games);
+    const game = games.find((game) => game.code === player.game);
+    if (game) {
+      //Check if not duplicate
+      let exists = false;
+      game.players.forEach((playerToFind) => {
+        if (playerToFind.name === player.name) {
+          exists = true;
         }
+      });
+      //If player doesn't exist
+      if (!exists) {
+        game.players.push(player);
+        console.log(
+          `${player.name} is succesfully pushed to game ${game.code}`
+        );
+        console.log(games);
+      } else {
+        console.log(`${player.name} is already taken.`);
       }
-    });
+    } else {
+      console.log(`${player.game} is not found.`);
+    }
   });
 
   //When a socket receives a code
@@ -44,21 +47,12 @@ io.on("connection", (socket) => {
     console.log("code entered:", code);
     io.sockets.emit(`code`, code);
 
-    let exists = false;
-
     //Check if a game exists with that code, if it doesn't create the game
-    //TODO: (Maybe use find or dictionary)
-    games.forEach((game) => {
-      if (game.code === code) {
-        console.log("game already exists");
-        exists = true;
-        return;
-      }
-    });
-
-    if (!exists) {
+    if (!games.find((game) => game.code === code)) {
       games.push({ id: socket.id, code: code, players: [] });
       console.log(games);
+    } else {
+      console.log("game already exists");
     }
   });
 });
