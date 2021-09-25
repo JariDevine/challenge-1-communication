@@ -14,6 +14,7 @@ function App() {
 
   //game variables
   const [game, setGame] = useState("");
+  const [inGame, setInGame] = useState("");
 
   useEffect(() => {
     socketRef.current = io.connect("http://localhost:80/");
@@ -27,6 +28,12 @@ function App() {
       console.log("game data received");
       console.log(game);
       setGame(game);
+    });
+
+    //receives check (if player joined or game started)
+    socketRef.current.on("check", (code) => {
+      console.log("game data received");
+      setInGame(code);
     });
   }, []);
 
@@ -57,8 +64,11 @@ function App() {
     console.log("set up game with code: ", gameCodeInput);
     if (gameCodeInput !== "") {
       socketRef.current.emit("code", gameCodeInput);
-      setGameCodeInput("");
     }
+  };
+
+  const startGame = () => {
+    socketRef.current.emit("onStart", game.host);
   };
 
   return (
@@ -67,59 +77,75 @@ function App() {
       <button onClick={() => setRole("host")}>Create room</button>
       <button onClick={() => setRole("player")}>Join room</button>
 
-      {role === "host" ? (
-        <>
-          <h2>Player View</h2>
-          <form onSubmit={onSubmitPlayer}>
-            <label htmlFor="name">Username</label>
-            <br />
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(event) => {
-                setNameInput(event.target.value);
-              }}
-            />
-            <br />
-            <label htmlFor="name">Code</label>
-            <br />
-            <input
-              type="text"
-              value={playerCodeInput}
-              onChange={(event) => {
-                setPlayerCodeInput(event.target.value);
-              }}
-            />
-            <br />
-            <button type="submit">Join</button>
-            <p>Waiting for host to start...</p>
-          </form>
-        </>
-      ) : null}
       {role === "player" ? (
         <>
-          <h2>Host View</h2>
-          <form onSubmit={onSubmitHost}>
-            <label htmlFor="name">Code</label>
-            <br />
-            <input
-              type="text"
-              value={gameCodeInput}
-              onChange={(event) => {
-                setGameCodeInput(event.target.value);
-              }}
-            />
-            <br />
-            <button type="submit">Host</button>
-          </form>
-          <h3>Start game</h3>
-          {game
-            ? game.players.map((player) => <p key={player.id}>{player.name}</p>)
-            : null}
-          {game.playable ? (
-            <button type="submit">Host</button>
+          <h2>Player View</h2>
+          {!inGame ? (
+            <form onSubmit={onSubmitPlayer}>
+              <label htmlFor="name">Username</label>
+              <br />
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(event) => {
+                  setNameInput(event.target.value);
+                }}
+              />
+              <br />
+              <label htmlFor="name">Code</label>
+              <br />
+              <input
+                type="text"
+                value={playerCodeInput}
+                onChange={(event) => {
+                  setPlayerCodeInput(event.target.value);
+                }}
+              />
+              <br />
+              <button type="submit">Join</button>
+            </form>
           ) : (
-            "waiting for players..."
+            <p>Waiting for host to start</p>
+          )}
+          {game.active ? <p>Game started</p> : null}
+        </>
+      ) : null}
+      {role === "host" ? (
+        <>
+          <h2>Host View</h2>
+          {!inGame ? (
+            <>
+              <form onSubmit={onSubmitHost}>
+                <label htmlFor="name">Code</label>
+                <br />
+                <input
+                  type="text"
+                  value={gameCodeInput}
+                  onChange={(event) => {
+                    setGameCodeInput(event.target.value);
+                  }}
+                />
+                <br />
+                <button type="submit">Host</button>
+              </form>
+            </>
+          ) : !game.active ? (
+            <>
+              <h3>Start game</h3>
+              <h4>Code: {inGame}</h4>
+              {game
+                ? game.players.map((player) => (
+                    <p key={player.id}>{player.name}</p>
+                  ))
+                : null}
+              {game.playable ? (
+                <button onClick={() => startGame()}>Host</button>
+              ) : (
+                <p>waiting for players...</p>
+              )}
+            </>
+          ) : (
+            <p>Game started</p>
           )}
         </>
       ) : null}

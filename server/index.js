@@ -33,6 +33,7 @@ io.on("connection", (socket) => {
       //If player doesn't exist
       if (!exists) {
         game.players.push(player);
+        io.to(player.id).emit("check", "ok");
         if (game.players.length >= 3) {
           game.playable = true;
           console.log(
@@ -64,9 +65,24 @@ io.on("connection", (socket) => {
     if (!games.find((game) => game.code === code)) {
       games.push({ host: socket.id, code: code, players: [] });
       console.log(games);
+      io.to(socket.id).emit("check", code);
     } else {
       console.log("game already exists");
     }
+  });
+
+  socket.on("onStart", (code) => {
+    console.log("game started");
+    const currentGame = games.find((game) => game.host === code);
+    currentGame.active = true;
+
+    //Inform host that the game has started
+    io.to(currentGame.host).emit("game", currentGame);
+
+    //Inform players that the game has started
+    currentGame.players.forEach((player) => {
+      io.to(player.id).emit("game", currentGame);
+    });
   });
 });
 
