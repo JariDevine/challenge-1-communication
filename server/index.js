@@ -11,6 +11,29 @@ const io = require("socket.io")(server, {
 });
 
 let games = [];
+const questions = [
+  "Who is most likely to pass wind in public?",
+  "Who is most likely to become a social media influencer?",
+  "Who is most likely to wear a crazy hairstyle all year long?",
+  "Who is most likely to take the most candy at a go?",
+];
+
+const toPlayers = (game, variable, obj) => {
+  game.players.forEach((player) => {
+    io.to(player.id).emit(variable, obj);
+  });
+};
+
+const generateQuestion = (currentGame) => {
+  let question = questions[Math.floor(Math.random() * questions.length)];
+  while (
+    currentGame.pastQuestions.find((pastQuestion) => pastQuestion === question)
+  ) {
+    question = questions[Math.floor(Math.random() * questions.length)];
+  }
+  io.to(currentGame.host).emit("question", question);
+  toPlayers(currentGame, "question", question);
+};
 
 io.on("connection", (socket) => {
   console.log("Socket connected", socket.id);
@@ -63,7 +86,12 @@ io.on("connection", (socket) => {
 
     //Check if a game exists with that code, if it doesn't create the game
     if (!games.find((game) => game.code === code)) {
-      games.push({ host: socket.id, code: code, players: [] });
+      games.push({
+        host: socket.id,
+        code: code,
+        players: [],
+        pastQuestions: [],
+      });
       console.log(games);
       io.to(socket.id).emit("check", code);
     } else {
@@ -71,18 +99,21 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("onStart", (code) => {
+  socket.on("onStart", (host) => {
     console.log("game started");
-    const currentGame = games.find((game) => game.host === code);
+    const currentGame = games.find((game) => game.host === host);
+
+    //Set game as active
     currentGame.active = true;
+
+    //Generate a question
+    generateQuestion(currentGame);
 
     //Inform host that the game has started
     io.to(currentGame.host).emit("game", currentGame);
 
     //Inform players that the game has started
-    currentGame.players.forEach((player) => {
-      io.to(player.id).emit("game", currentGame);
-    });
+    toPlayers(currentGame, "game", currentGame);
   });
 });
 

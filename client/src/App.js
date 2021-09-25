@@ -15,6 +15,8 @@ function App() {
   //game variables
   const [game, setGame] = useState("");
   const [inGame, setInGame] = useState("");
+  const [question, setQuestion] = useState();
+  const [newRound, setNewRound] = useState(true);
 
   useEffect(() => {
     socketRef.current = io.connect("http://localhost:80/");
@@ -35,7 +37,20 @@ function App() {
       console.log("game data received");
       setInGame(code);
     });
+
+    //receives question
+    socketRef.current.on("question", (question) => {
+      console.log("question received: ", question);
+      setQuestion(question);
+    });
   }, []);
+
+  useEffect(() => {
+    //new round started
+    if (role === "player") {
+      setNewRound(true);
+    }
+  }, question);
 
   const onSubmitPlayer = (event) => {
     event.preventDefault();
@@ -69,6 +84,12 @@ function App() {
 
   const startGame = () => {
     socketRef.current.emit("onStart", game.host);
+  };
+
+  const submitAnswer = (vote, user) => {
+    console.log(vote);
+    console.log(user);
+    socketRef.current.emit("answer", { id: user, vote: vote });
   };
 
   return (
@@ -107,7 +128,16 @@ function App() {
           ) : (
             <p>Waiting for host to start</p>
           )}
-          {game.active ? <p>Game started</p> : null}
+          {game.active
+            ? game.players.map((player) => (
+                <p
+                  key={player.id}
+                  onClick={() => submitAnswer(player.id, socketRef.current.id)}
+                >
+                  {player.name}
+                </p>
+              ))
+            : null}
         </>
       ) : null}
       {role === "host" ? (
@@ -145,7 +175,7 @@ function App() {
               )}
             </>
           ) : (
-            <p>Game started</p>
+            <p>{question}</p>
           )}
         </>
       ) : null}
