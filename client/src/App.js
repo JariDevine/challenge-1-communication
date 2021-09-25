@@ -4,11 +4,14 @@ import "./App.css";
 
 function App() {
   const socketRef = useRef();
+
+  //form input
   const [nameInput, setNameInput] = useState("");
   const [playerCodeInput, setPlayerCodeInput] = useState("");
   const [gameCodeInput, setGameCodeInput] = useState("");
-  const [playable, setPlayable] = useState(false);
-  const [game, setGame] = useState();
+
+  //game variables
+  const [game, setGame] = useState("");
 
   useEffect(() => {
     socketRef.current = io.connect("http://localhost:80/");
@@ -22,9 +25,6 @@ function App() {
       console.log("game data received");
       console.log(game);
       setGame(game);
-      if (game.playable === true) {
-        setPlayable(game.playable);
-      }
     });
   }, []);
 
@@ -62,7 +62,7 @@ function App() {
   return (
     <div className="App">
       <h1>Welcome to the app!</h1>
-      <h2>User form</h2>
+      <h2>Player View</h2>
       <form onSubmit={onSubmitPlayer}>
         <label htmlFor="name">Username</label>
         <br />
@@ -85,9 +85,10 @@ function App() {
         />
         <br />
         <button type="submit">Join</button>
+        <p>Waiting for host to start...</p>
       </form>
 
-      <h2>Host form</h2>
+      <h2>Host View</h2>
       <form onSubmit={onSubmitHost}>
         <label htmlFor="name">Code</label>
         <br />
@@ -101,10 +102,15 @@ function App() {
         <br />
         <button type="submit">Host</button>
       </form>
-      <p>Game playable: {playable ? "yes" : "no"}</p>
+      <h3>Start game</h3>
       {game
         ? game.players.map((player) => <p key={player.id}>{player.name}</p>)
         : null}
+      {game.playable ? (
+        <button type="submit">Host</button>
+      ) : (
+        "waiting for players..."
+      )}
     </div>
   );
 }

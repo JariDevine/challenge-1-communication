@@ -55,7 +55,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  //When a socket receives a code
+  //When server receives a code
   socket.on("code", (code) => {
     console.log("code entered:", code);
     io.sockets.emit(`code`, code);
