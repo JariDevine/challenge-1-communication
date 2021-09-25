@@ -7,12 +7,24 @@ function App() {
   const [nameInput, setNameInput] = useState("");
   const [playerCodeInput, setPlayerCodeInput] = useState("");
   const [gameCodeInput, setGameCodeInput] = useState("");
+  const [playable, setPlayable] = useState(false);
+  const [game, setGame] = useState();
 
   useEffect(() => {
     socketRef.current = io.connect("http://localhost:80/");
 
     socketRef.current.on("connect", () => {
       console.log(socketRef.current.id);
+    });
+
+    //receives if game started
+    socketRef.current.on("game", (game) => {
+      console.log("game data received");
+      console.log(game);
+      setGame(game);
+      if (game.playable === true) {
+        setPlayable(game.playable);
+      }
     });
   }, []);
 
@@ -89,6 +101,10 @@ function App() {
         <br />
         <button type="submit">Host</button>
       </form>
+      <p>Game playable: {playable ? "yes" : "no"}</p>
+      {game
+        ? game.players.map((player) => <p key={player.id}>{player.name}</p>)
+        : null}
     </div>
   );
 }

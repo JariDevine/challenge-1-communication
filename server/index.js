@@ -23,16 +23,29 @@ io.on("connection", (socket) => {
       //Check if not duplicate
       let exists = false;
       game.players.forEach((playerToFind) => {
-        if (playerToFind.name === player.name) {
+        if (
+          playerToFind.name === player.name ||
+          playerToFind.id === player.id
+        ) {
           exists = true;
         }
       });
       //If player doesn't exist
       if (!exists) {
         game.players.push(player);
+        if (game.players.length >= 3) {
+          game.playable = true;
+          console.log(
+            "The game contains at least 3 players and is now playable"
+          );
+        } else {
+          game.playable = false;
+        }
         console.log(
           `${player.name} is succesfully pushed to game ${game.code}`
         );
+        //Push game object to host
+        io.to(game.host).emit("game", game);
         console.log(games);
       } else {
         console.log(`${player.name} is already taken.`);
@@ -49,7 +62,7 @@ io.on("connection", (socket) => {
 
     //Check if a game exists with that code, if it doesn't create the game
     if (!games.find((game) => game.code === code)) {
-      games.push({ id: socket.id, code: code, players: [] });
+      games.push({ host: socket.id, code: code, players: [] });
       console.log(games);
     } else {
       console.log("game already exists");
