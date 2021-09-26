@@ -48,6 +48,7 @@ const checkAnswers = (game) => {
   //Check if all players submitted an answer
   if (game.answers.length === game.players.length) {
     console.log("all answers submitted");
+    io.to(game.host).emit("game", game);
 
     //Add all votes to an array
     let submittedAnswers = [];
@@ -98,13 +99,12 @@ const checkAnswers = (game) => {
         }
       });
     });
-    //Reset answers array
-    game.answers = [];
 
     //Return data
     generateQuestion(game);
     io.to(game.host).emit("game", game);
     io.to(game.host).emit("roundEnded", true);
+    io.to(game.host).emit("rightAnswers", rightAnswers);
     toPlayers(game, "game", game);
   }
 };
