@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import "./App.css";
 
 function App() {
+  console.log("rerender");
   const socketRef = useRef();
   //role select
   const [role, setRole] = useState("");
@@ -16,7 +17,8 @@ function App() {
   const [game, setGame] = useState("");
   const [inGame, setInGame] = useState("");
   const [question, setQuestion] = useState();
-  const [newRound, setNewRound] = useState(true);
+  const [scorers, setScorers] = useState([]);
+  const [voted, setVoted] = useState(false);
 
   useEffect(() => {
     socketRef.current = io.connect("http://localhost:80/");
@@ -46,11 +48,17 @@ function App() {
   }, []);
 
   useEffect(() => {
-    //new round started
-    if (role === "player") {
-      setNewRound(true);
-    }
-  }, question);
+    //receives player who scored point
+    socketRef.current.on("winner", (winner) => {
+      console.log(scorers);
+      console.log("received winner");
+      let temp = [...scorers];
+      temp.push(winner);
+      console.log("setting scorers to");
+      console.log(temp);
+      setScorers([...temp]);
+    });
+  }, [scorers]);
 
   const onSubmitPlayer = (event) => {
     event.preventDefault();
@@ -88,9 +96,11 @@ function App() {
   };
 
   const submitAnswer = (vote, user, game) => {
+    console.log("submitting answer");
     console.log(vote);
     console.log(user);
     socketRef.current.emit("answer", [game, { id: user, vote: vote }]);
+    setVoted(true);
   };
 
   return (
@@ -126,11 +136,10 @@ function App() {
               <br />
               <button type="submit">Join</button>
             </form>
-          ) : (
-            <p>Waiting for host to start</p>
-          )}
-          {game.active
-            ? game.players.map((player) => (
+          ) : null}
+          {game.active ? (
+            !voted ? (
+              game.players.map((player) => (
                 <p
                   key={player.id}
                   onClick={() =>
@@ -140,7 +149,12 @@ function App() {
                   {player.name}
                 </p>
               ))
-            : null}
+            ) : (
+              <p>{console.log(voted)}Waiting for other players to vote...</p>
+            )
+          ) : inGame ? (
+            <p>Waiting for host to start...</p>
+          ) : null}
         </>
       ) : null}
       {role === "host" ? (
@@ -164,8 +178,7 @@ function App() {
             </>
           ) : !game.active ? (
             <>
-              <h3>Start game</h3>
-              <h4>Code: {inGame}</h4>
+              <h3>Code: {inGame}</h3>
               {game
                 ? game.players.map((player) => (
                     <p key={player.id}>{player.name}</p>
@@ -177,8 +190,26 @@ function App() {
                 <p>waiting for players...</p>
               )}
             </>
-          ) : (
+          ) : scorers.length === 0 ? (
             <p>{question}</p>
+          ) : (
+            game.players.map((player) => (
+              <>
+                <p key={player.id}>player: {player.name}</p>
+                <p>
+                  now has {player.points} points
+                  {scorers.map((scorer) => {
+                    if (scorer === player.id) {
+                      console.log("match found");
+                      return <strong> (+1)</strong>;
+                    } else {
+                      return null;
+                    }
+                  })}
+                </p>
+                <p>_________________</p>
+              </>
+            ))
           )}
         </>
       ) : null}

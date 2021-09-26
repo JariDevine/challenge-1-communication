@@ -25,12 +25,21 @@ const toPlayers = (game, variable, obj) => {
 };
 
 const generateQuestion = (currentGame) => {
+  //Inform host new round has started
+  io.to(currentGame.host).emit("roundEnded", false);
+
+  //Set a question
   let question = questions[Math.floor(Math.random() * questions.length)];
+
+  //As long as the question is in past questions, generate a new one
   while (
     currentGame.pastQuestions.find((pastQuestion) => pastQuestion === question)
   ) {
     question = questions[Math.floor(Math.random() * questions.length)];
   }
+  currentGame.pastQuestions.push(question);
+
+  //Send the generated question to the player
   io.to(currentGame.host).emit("question", question);
   toPlayers(currentGame, "question", question);
 };
@@ -69,14 +78,23 @@ const checkAnswers = (game) => {
 
     //Check if answer with max was voted on
     console.log("Checking answers");
+    /* for each answer, compare it to a right answer, 
+    right answers is an array cause everyone could have voted for someone else, 
+    or in an even group, half could have voted for one person and the other half for another */
+
     game.answers.forEach((answer) => {
       rightAnswers.forEach((rightAnswer) => {
-        console.log("_______________");
         const toCheckAnswer = rightAnswer.find((vote) => vote === answer.vote);
         if (toCheckAnswer) {
           const winner = game.players.find((player) => player.id === answer.id);
-          winner.points = winner.points + 1;
-          console.log(`${winner.name} now has ${winner.points} points`);
+          if (winner) {
+            winner.points = winner.points + 1;
+            console.log(`${winner.name} now has ${winner.points} points`);
+
+            //Return users with points
+            console.log("sending winner id", winner.id);
+            io.to(game.host).emit("winner", winner.id);
+          }
         }
       });
     });
@@ -84,7 +102,9 @@ const checkAnswers = (game) => {
     game.answers = [];
 
     //Return data
+    generateQuestion(game);
     io.to(game.host).emit("game", game);
+    io.to(game.host).emit("roundEnded", true);
     toPlayers(game, "game", game);
   }
 };
