@@ -12,10 +12,17 @@ const io = require("socket.io")(server, {
 
 let games = [];
 const questions = [
-  "Who is most likely to pass wind in public?",
+  "Who is most likely to have the most spoilt kids?",
   "Who is most likely to become a social media influencer?",
   "Who is most likely to wear a crazy hairstyle all year long?",
-  "Who is most likely to take the most candy at a go?",
+  "Who is most likely to marry their pet?",
+  "Who is most likely to fight a police officer?",
+  "Who is most likely to turn up to work drunk?",
+  "Who would most likely dye their hair in weird colors?",
+  "Who is most likely to become the wealthiest?",
+  "Who is most likely to take up professional sports?",
+  "Who is most likely to work for NASA?",
+  "Who is most likely to sleep through an alarm?",
 ];
 
 const toPlayers = (game, variable, obj) => {
@@ -101,10 +108,7 @@ const checkAnswers = (game) => {
     });
 
     //Return data
-    generateQuestion(game);
     io.to(game.host).emit("game", game);
-    io.to(game.host).emit("roundEnded", true);
-    io.to(game.host).emit("rightAnswers", rightAnswers);
     toPlayers(game, "game", game);
   }
 };
@@ -177,18 +181,36 @@ io.on("connection", (socket) => {
   socket.on("onStart", (host) => {
     console.log("game started");
     const currentGame = games.find((game) => game.host === host);
-
     //Set game as active
     currentGame.active = true;
-
     //Generate a question
     generateQuestion(currentGame);
-
     //Inform host that the game has started
     io.to(currentGame.host).emit("game", currentGame);
-
     //Inform players that the game has started
     toPlayers(currentGame, "game", currentGame);
+  });
+
+  //Handle new round
+  socket.on("next", (host) => {
+    const currentGame = games.find((game) => game.host === host);
+    //Clear previous answers
+    currentGame.answers = [];
+
+    if (currentGame.pastQuestions.length < 5) {
+      generateQuestion(currentGame);
+      console.log(currentGame);
+      //Inform players of started round
+      toPlayers(currentGame, "newRound", true);
+      io.to(currentGame.host).emit("newRound", true);
+      io.to(currentGame.host).emit("game", currentGame);
+    } else {
+      //Set game as inactive
+      currentGame.active = false;
+      currentGame.pastQuestions = [];
+      //Inform host that the game has ended
+      io.to(currentGame.host).emit("game", currentGame);
+    }
   });
 
   socket.on("answer", (data) => {
