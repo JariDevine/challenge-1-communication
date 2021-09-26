@@ -66,6 +66,7 @@ function App() {
         id: socketRef.current.id,
         name: nameInput,
         game: playerCodeInput,
+        points: 0,
       };
       socketRef.current.emit("player", player);
       setNameInput("");
@@ -86,10 +87,10 @@ function App() {
     socketRef.current.emit("onStart", game.host);
   };
 
-  const submitAnswer = (vote, user) => {
+  const submitAnswer = (vote, user, game) => {
     console.log(vote);
     console.log(user);
-    socketRef.current.emit("answer", { id: user, vote: vote });
+    socketRef.current.emit("answer", [game, { id: user, vote: vote }]);
   };
 
   return (
@@ -132,7 +133,9 @@ function App() {
             ? game.players.map((player) => (
                 <p
                   key={player.id}
-                  onClick={() => submitAnswer(player.id, socketRef.current.id)}
+                  onClick={() =>
+                    submitAnswer(player.id, socketRef.current.id, game)
+                  }
                 >
                   {player.name}
                 </p>

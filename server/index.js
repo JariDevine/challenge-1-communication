@@ -35,6 +35,60 @@ const generateQuestion = (currentGame) => {
   toPlayers(currentGame, "question", question);
 };
 
+const checkAnswers = (game) => {
+  //Check if all players submitted an answer
+  if (game.answers.length === game.players.length) {
+    console.log("all answers submitted");
+
+    //Add all votes to an array
+    let submittedAnswers = [];
+    game.answers.forEach((answer) => {
+      submittedAnswers.push(answer.vote);
+    });
+
+    //Check who got the most votes
+    const counts = {};
+    submittedAnswers.forEach(function (x) {
+      counts[x] = (counts[x] || 0) + 1;
+    });
+    console.log(counts);
+
+    //Create array of values and search highest number
+    let arr = Object.values(counts);
+    let max = Math.max(...arr);
+
+    //Check which entries contain the max
+    let rightAnswers = [];
+    let toCheck = Object.entries(counts);
+    toCheck.forEach((answer) => {
+      if (answer[1] === max) {
+        rightAnswers.push(answer);
+      }
+    });
+    console.log(rightAnswers);
+
+    //Check if answer with max was voted on
+    console.log("Checking answers");
+    game.answers.forEach((answer) => {
+      rightAnswers.forEach((rightAnswer) => {
+        console.log("_______________");
+        const toCheckAnswer = rightAnswer.find((vote) => vote === answer.vote);
+        if (toCheckAnswer) {
+          const winner = game.players.find((player) => player.id === answer.id);
+          winner.points = winner.points + 1;
+          console.log(`${winner.name} now has ${winner.points} points`);
+        }
+      });
+    });
+    //Reset answers array
+    game.answers = [];
+
+    //Return data
+    io.to(game.host).emit("game", game);
+    toPlayers(game, "game", game);
+  }
+};
+
 io.on("connection", (socket) => {
   console.log("Socket connected", socket.id);
 
@@ -91,6 +145,7 @@ io.on("connection", (socket) => {
         code: code,
         players: [],
         pastQuestions: [],
+        answers: [],
       });
       console.log(games);
       io.to(socket.id).emit("check", code);
@@ -114,6 +169,15 @@ io.on("connection", (socket) => {
 
     //Inform players that the game has started
     toPlayers(currentGame, "game", currentGame);
+  });
+
+  socket.on("answer", (data) => {
+    let currentGame = games.find((game) => game.host === data[0].host);
+
+    const answerData = data[1];
+
+    currentGame.answers.push(answerData);
+    checkAnswers(currentGame);
   });
 });
 
