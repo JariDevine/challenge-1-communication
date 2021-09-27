@@ -22,6 +22,7 @@ function App() {
 
   useEffect(() => {
     socketRef.current = io.connect(process.env.REACT_APP_SOCKETHOST);
+    console.log("trying to connect to ", process.env.REACT_APP_SOCKETHOST);
 
     socketRef.current.on("connect", () => {
       console.log(socketRef.current.id);
