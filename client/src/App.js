@@ -21,7 +21,9 @@ function App() {
   const [roundStatus, setRoundStatus] = useState(false);
 
   useEffect(() => {
-    socketRef.current = io.connect(process.env.REACT_APP_SOCKETHOST);
+    socketRef.current = io.connect(process.env.REACT_APP_SOCKETHOST, {
+      transports: ["websocket"],
+    });
     console.log("trying to connect to ", process.env.REACT_APP_SOCKETHOST);
 
     socketRef.current.on("connect", () => {
