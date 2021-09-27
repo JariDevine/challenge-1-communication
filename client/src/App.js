@@ -19,6 +19,7 @@ function App() {
   const [scorers, setScorers] = useState([]);
   const [voted, setVoted] = useState(false);
   const [roundStatus, setRoundStatus] = useState(false);
+  const [terminated, setTerminated] = useState(false);
 
   useEffect(() => {
     socketRef.current = io.connect("http://localhost:80/");
@@ -40,6 +41,11 @@ function App() {
     //receives check (if player joined or game started)
     socketRef.current.on("check", (code) => {
       setInGame(code);
+    });
+
+    //receives check (if player joined or game started)
+    socketRef.current.on("terminated", (value) => {
+      setTerminated(value);
     });
 
     //receives check (if player joined or game started)
@@ -112,6 +118,10 @@ function App() {
     setScorers([]);
   };
 
+  window.addEventListener("beforeunload", () => {
+    socketRef.current.disconnect();
+  });
+
   return (
     <div className="App">
       <h1>Who would 🤔</h1>
@@ -121,6 +131,7 @@ function App() {
       {role === "player" ? (
         <>
           <h2>Player View</h2>
+          {!terminated ? <p>Game is running</p> : <p>Host disconnected</p>}
           {!inGame ? (
             <form onSubmit={onSubmitPlayer}>
               <label htmlFor="name">Username</label>

@@ -54,7 +54,6 @@ const generateQuestion = (currentGame) => {
 const checkAnswers = (game) => {
   //Check if all players submitted an answer
   if (game.answers.length === game.players.length) {
-    console.log("all answers submitted");
     io.to(game.host).emit("game", game);
 
     //Add all votes to an array
@@ -68,7 +67,6 @@ const checkAnswers = (game) => {
     submittedAnswers.forEach(function (x) {
       counts[x] = (counts[x] || 0) + 1;
     });
-    console.log(counts);
 
     //Create array of values and search highest number
     let arr = Object.values(counts);
@@ -82,10 +80,8 @@ const checkAnswers = (game) => {
         rightAnswers.push(answer);
       }
     });
-    console.log(rightAnswers);
 
     //Check if answer with max was voted on
-    console.log("Checking answers");
     /* for each answer, compare it to a right answer, 
     right answers is an array cause everyone could have voted for someone else, 
     or in an even group, half could have voted for one person and the other half for another */
@@ -97,10 +93,8 @@ const checkAnswers = (game) => {
           const winner = game.players.find((player) => player.id === answer.id);
           if (winner) {
             winner.points = winner.points + 1;
-            console.log(`${winner.name} now has ${winner.points} points`);
 
             //Return users with points
-            console.log("sending winner id", winner.id);
             io.to(game.host).emit("winner", winner.id);
           }
         }
@@ -160,7 +154,6 @@ io.on("connection", (socket) => {
 
   //When server receives a code
   socket.on("code", (code) => {
-    console.log("code entered:", code);
     io.sockets.emit(`code`, code);
 
     //Check if a game exists with that code, if it doesn't create the game
@@ -180,7 +173,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("onStart", (host) => {
-    console.log("game started");
     const currentGame = games.find((game) => game.host === host);
     //Set game as active
     currentGame.active = true;
@@ -201,7 +193,6 @@ io.on("connection", (socket) => {
 
     if (currentGame.pastQuestions.length < 5) {
       generateQuestion(currentGame);
-      console.log(currentGame);
       //Inform players of started round
       toPlayers(currentGame, "newRound", true);
       io.to(currentGame.host).emit("newRound", true);
@@ -223,6 +214,31 @@ io.on("connection", (socket) => {
 
     currentGame.answers.push(answerData);
     checkAnswers(currentGame);
+  });
+
+  io.on("disconnect", () => {
+    console.log("socket disconected", socket.id);
+    const game = games.find((game) => game.host === socket.id);
+
+    //Check if the disconnecter was the host
+    if (game) {
+      toPlayers(game, "terminated", true);
+      for (let i = 0; i < games.length; i++) {
+        if (games[i] === game) {
+          games.splice(i, 1);
+        }
+      }
+    }
+    //Check if the disconnecter was a player
+    else {
+      games.forEach((game) => {
+        game.players.forEach((player, i) => {
+          if (player.id === socket.id) {
+            game.player.splice(i, 1);
+          }
+        });
+      });
+    }
   });
 });
 
