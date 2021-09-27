@@ -6,7 +6,7 @@ require("dotenv").config();
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: "https://challenge-1-communication-client.vercel.app/",
+    origin: "https://challenge-1-communication-client.vercel.app",
     credentials: true,
     methods: ["GET", "POST"],
   },
