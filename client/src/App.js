@@ -18,6 +18,7 @@ function App() {
   const [question, setQuestion] = useState();
   const [scorers, setScorers] = useState([]);
   const [voted, setVoted] = useState(false);
+  const [roundStatus, setRoundStatus] = useState(false);
 
   useEffect(() => {
     socketRef.current = io.connect("http://localhost:80/");
@@ -39,6 +40,12 @@ function App() {
     //receives check (if player joined or game started)
     socketRef.current.on("check", (code) => {
       setInGame(code);
+    });
+
+    //receives check (if player joined or game started)
+    socketRef.current.on("roundEnded", (value) => {
+      setRoundStatus(value);
+      setScorers([]);
     });
 
     //receives question
@@ -102,6 +109,7 @@ function App() {
 
   const setNextQuestion = () => {
     socketRef.current.emit("next", game.host);
+    setScorers([]);
   };
 
   return (
@@ -150,8 +158,10 @@ function App() {
                   {player.name}
                 </p>
               ))
-            ) : (
+            ) : !roundStatus ? (
               <p>Waiting for other players to vote...</p>
+            ) : (
+              <p>Wait for the host to start next round</p>
             )
           ) : inGame ? (
             <p>Waiting for host to start...</p>
@@ -219,7 +229,7 @@ function App() {
                     now has {player.points} points
                     {scorers.map((scorer) => {
                       if (scorer === player.id) {
-                        return <strong> (+1)</strong>;
+                        return <strong>(+1)</strong>;
                       } else {
                         return null;
                       }

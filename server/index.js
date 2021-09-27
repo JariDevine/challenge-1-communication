@@ -110,6 +110,7 @@ const checkAnswers = (game) => {
     //Return data
     io.to(game.host).emit("game", game);
     toPlayers(game, "game", game);
+    toPlayers(game, "roundEnded", true);
   }
 };
 
@@ -194,6 +195,7 @@ io.on("connection", (socket) => {
   //Handle new round
   socket.on("next", (host) => {
     const currentGame = games.find((game) => game.host === host);
+    toPlayers(currentGame, "roundEnded", false);
     //Clear previous answers
     currentGame.answers = [];
 
@@ -210,6 +212,7 @@ io.on("connection", (socket) => {
       currentGame.pastQuestions = [];
       //Inform host that the game has ended
       io.to(currentGame.host).emit("game", currentGame);
+      toPlayers(currentGame, "game", currentGame);
     }
   });
 
