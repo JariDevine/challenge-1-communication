@@ -2,13 +2,16 @@ const express = require("express");
 const app = express();
 const server = require("http").Server(app);
 const port = process.env.PORT || 80;
+require("dotenv").config();
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT,
     methods: ["GET", "POST"],
   },
 });
+
+console.log("I now allow", process.env.CLIENT);
 
 let games = [];
 const questions = [
@@ -223,6 +226,10 @@ io.on("connection", (socket) => {
 
     currentGame.answers.push(answerData);
     checkAnswers(currentGame);
+  });
+
+  socket.on("disconnect", function () {
+    console.log("user disconnected");
   });
 });
 

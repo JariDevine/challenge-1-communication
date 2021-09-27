@@ -21,7 +21,7 @@ function App() {
   const [roundStatus, setRoundStatus] = useState(false);
 
   useEffect(() => {
-    socketRef.current = io.connect("http://localhost:80/");
+    socketRef.current = io.connect(process.env.REACT_APP_SOCKETHOST);
 
     socketRef.current.on("connect", () => {
       console.log(socketRef.current.id);
