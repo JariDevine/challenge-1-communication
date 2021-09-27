@@ -6,7 +6,7 @@ require("dotenv").config();
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: true,
+    origin: process.env.CLIENT,
     credentials: true,
     methods: ["GET", "POST"],
   },
